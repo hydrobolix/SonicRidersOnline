@@ -48,4 +48,6 @@ Submodule added (task 1.1). Pinned commit: `4f42e59cb5b6089a2aba413d344f804e5362
 
 Upstream layout (confirmed from the checkout, task 1.6): top-level `Makefile`, `README.md`, `asm/`, `partial.lcf`, `static.lcf`, `resolveLinkerErrors.py`, `sonicriders.sha1`, `tools/`. No top-level license file was found, so upstream licensing is UNVERIFIED.
 
+Compiler blocker: `GC_WII_COMPILERS.zip` is not available. The upstream README only links a Discord CDN copy. The Makefile expects `tools/mwcc_compiler/2.6/mwcceppc.exe` and `mwldeppc.exe` (`COMPILER_VERSION ?= 2.6`), run through `WINE` on non-Windows hosts. Not redistributed here. Phase 1 build is on hold until the user supplies the compiler.
+
 Not yet built: tasks 1.2–1.5 need the user's `baserom.dol`, the MWCC compiler, and devkitPro.
