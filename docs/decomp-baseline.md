@@ -19,7 +19,7 @@ Phase 1. Builds the US Sonic Riders DOL from the decomp source as a verification
 
 ## Decisions
 
-- D-1: Use a pinned submodule, not a copy, so upstream history stays separate. Pin commit recorded in this doc once chosen.
+- D-1: Use a pinned submodule, not a copy, so upstream history stays separate. Pinned to `doldecomp/sonicriders` commit `4f42e59cb5b6089a2aba413d344f804e5362f06f` (upstream `HEAD` on 2026-11-02; last upstream commit dated 2022-02-06, Merge PR #7).
 - D-2: Do not edit files under `decomp/` in feature work. Local shims go in `port/`.
 
 ## Dependencies
@@ -44,4 +44,8 @@ Phase 1. Builds the US Sonic Riders DOL from the decomp source as a verification
 
 ## Status
 
-Not started. Pinned commit: TBD.
+Submodule added (task 1.1). Pinned commit: `4f42e59cb5b6089a2aba413d344f804e5362f06f`.
+
+Upstream layout (confirmed from the checkout, task 1.6): top-level `Makefile`, `README.md`, `asm/`, `partial.lcf`, `static.lcf`, `resolveLinkerErrors.py`, `sonicriders.sha1`, `tools/`. No top-level license file was found, so upstream licensing is UNVERIFIED.
+
+Not yet built: tasks 1.2–1.5 need the user's `baserom.dol`, the MWCC compiler, and devkitPro.

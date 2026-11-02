@@ -25,7 +25,7 @@ Non-goals (until a later decision): modding Sonic Riders DX/TE ports, art asset 
 
 | Area | Location | Doc |
 |---|---|---|
-| Decomp baseline (matching DOL) | `decomp/` (git submodule, pinned) | docs/decomp-baseline.md |
+| Decomp baseline (matching DOL) | `decomp/` (git submodule of `doldecomp/sonicriders`, pinned to `4f42e59c`) | docs/decomp-baseline.md |
 | Asset and format extraction | `tools/extract/` | docs/asset-extraction.md |
 | Map authoring and validation | `tools/mapkit/`, `maps/` | docs/custom-maps.md |
 | Navigation data and layout | `maps/*/nav/`, `tools/mapkit/` | docs/map-navigation.md |

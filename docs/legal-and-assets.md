@@ -29,7 +29,7 @@ Allowed to commit:
 
 ## Dependencies
 
-- Upstream decomp license (to be confirmed in Phase 1).
+- Upstream decomp license: not found. `doldecomp/sonicriders` has no top-level license file at pinned commit `4f42e59c`. UNVERIFIED until the upstream terms are confirmed.
 
 ## Ordered steps
 

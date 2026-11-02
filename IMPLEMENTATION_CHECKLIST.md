@@ -14,12 +14,12 @@ Doc: [docs/legal-and-assets.md](docs/legal-and-assets.md)
 
 Doc: [docs/decomp-baseline.md](docs/decomp-baseline.md)
 
-- [ ] 1.1 Add `decomp/` submodule at a pinned commit. Record the commit in the doc.
+- [x] 1.1 Add `decomp/` submodule at a pinned commit. Record the commit in the doc.
 - [ ] 1.2 Install devkitPro, python3, gcc. Record versions.
 - [ ] 1.3 User supplies `baserom.dol` and the MWCC compiler (blocker until provided).
 - [ ] 1.4 Run `make` in `decomp/`.
 - [ ] 1.5 Verify `sha1sum decomp/build/sonicriders.dol` equals `e90a13504974b917a675d59f07014e0e817c5e5d`.
-- [ ] 1.6 Confirm upstream layout and update the AGENTS.md architecture table.
+- [x] 1.6 Confirm upstream layout and update the AGENTS.md architecture table.
 - [ ] 1.7 Acceptance: sha1 matches from a clean clone plus user inputs.
 
 ## Phase 2 — Asset and format extraction
