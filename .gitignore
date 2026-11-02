@@ -1,0 +1,42 @@
+# Game inputs supplied by the user (never redistributed)
+baserom.dol
+*.iso
+*.gcm
+*.arc
+*.szs
+*.dol
+*.elf
+*.map.bin
+
+# Extracted game data
+assets/extracted/
+assets/game/
+
+# MWCC compiler (GC_WII_COMPILERS.zip contents)
+GC_WII_COMPILERS/
+mwcc/
+*.zip
+
+# Builds and tool output
+build/
+dist/
+out/
+*.o
+*.d
+*.a
+.wrangler/
+node_modules/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

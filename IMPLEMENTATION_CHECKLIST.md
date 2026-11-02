@@ -6,9 +6,9 @@ Ordered task list. Work top to bottom. Mark `[x]` only after the acceptance and 
 
 Doc: [docs/legal-and-assets.md](docs/legal-and-assets.md)
 
-- [ ] 0.1 Add `.gitignore` for game binaries, extracted assets, builds, and secrets.
-- [ ] 0.2 Verify with a dummy `baserom.dol` that `git status` ignores it.
-- [ ] 0.3 Acceptance: no game files are tracked.
+- [x] 0.1 Add `.gitignore` for game binaries, extracted assets, builds, and secrets.
+- [x] 0.2 Verify with a dummy `baserom.dol` that `git status` ignores it.
+- [x] 0.3 Acceptance: no game files are tracked.
 
 ## Phase 1 — Decomp baseline
 
