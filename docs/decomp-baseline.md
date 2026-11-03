@@ -50,4 +50,4 @@ Upstream layout (confirmed from the checkout, task 1.6): top-level `Makefile`, `
 
 Compiler blocker: `GC_WII_COMPILERS.zip` is not available. The upstream README only links a Discord CDN copy. The Makefile expects `tools/mwcc_compiler/2.6/mwcceppc.exe` and `mwldeppc.exe` (`COMPILER_VERSION ?= 2.6`), run through `WINE` on non-Windows hosts. Not redistributed here. Phase 1 build is on hold until the user supplies the compiler.
 
-Not yet built: tasks 1.2–1.5 need the user's `baserom.dol`, the MWCC compiler, and devkitPro.
+`baserom.dol` verified: a user-supplied US disc (`GXEE8P`, 1,461,714,944 bytes) yields a `boot.dol` with sha1 `e90a13504974b917a675d59f07014e0e817c5e5d`, matching the decomp. The file was placed at `decomp/baserom.dol` (git-ignored) and is not in the repository. Not yet built: tasks 1.2–1.5 still need the MWCC compiler and devkitPro.
