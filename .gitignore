@@ -40,3 +40,7 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local toolchains, compilers and scratch clones (never committed)
+.local/
+decomp/tools/mwcc_compiler/

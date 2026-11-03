@@ -15,12 +15,12 @@ Doc: [docs/legal-and-assets.md](docs/legal-and-assets.md)
 Doc: [docs/decomp-baseline.md](docs/decomp-baseline.md)
 
 - [x] 1.1 Add `decomp/` submodule at a pinned commit. Record the commit in the doc.
-- [ ] 1.2 Install devkitPro, python3, gcc. Record versions.
-- [ ] 1.3 User supplies `baserom.dol` and the MWCC compiler (blocker until provided).
-- [ ] 1.4 Run `make` in `decomp/`.
-- [ ] 1.5 Verify `sha1sum decomp/build/sonicriders.dol` equals `e90a13504974b917a675d59f07014e0e817c5e5d`.
+- [x] 1.2 Install devkitPro, python3, gcc. Record versions. (devkitPPC r51 unpacked into `.local/`; versions in docs/decomp-baseline.md.)
+- [x] 1.3 User supplies `baserom.dol` and the MWCC compiler. (Supplied: CodeWarrior 2.4.7 build 105, used with `COMPILER_VERSION=2.5`.)
+- [x] 1.4 Run `make` in `decomp/`. (Output is `decomp/sonicriders.dol`; see the path note in the doc.)
+- [x] 1.5 Verify `sha1sum decomp/build/sonicriders.dol` equals `e90a13504974b917a675d59f07014e0e817c5e5d`. (Met by copying the build output to `decomp/build/`; the Makefile does not write there.)
 - [x] 1.6 Confirm upstream layout and update the AGENTS.md architecture table.
-- [ ] 1.7 Acceptance: sha1 matches from a clean clone plus user inputs.
+- [x] 1.7 Acceptance: sha1 matches from a clean clone plus user inputs. (Clean clone of `4f42e59` with the user inputs: `sha1sum -c sonicriders.sha1` passes for both files.)
 
 ## Phase 2 — Asset and format extraction
 
