@@ -130,30 +130,30 @@ Consequence: the `0x20000` in the DVD log is an argument the game passed to `DVD
 - `func_8000CB18` has one direct caller, `func_8000CF9C` (lib.s 4265), which passes `r9` from a block it fills by copying a pointer array. That `r9` path is separate from the `r30` reassignment above.
 - `func_8000CF9C` has one caller, `func_8000E9AC` (lib.s 6149), which passes a pointer to a zeroed stack word. `func_8000E9AC` is called from `func_8000EC7C` (lib.s 6356), a state dispatcher (`func_8000EC7C` does not write the request struct).
 - So no static caller in the `func_800153E4` or SDK-reader paths carries a literal `0x20000` length. The value must be computed, or come from a caller not yet traced.
-- The 31 `lis rN, 2` sites in `lib.s` (UNVERIFIED): the DVD-area ones (`80014CC0`, `80014CE8` and their neighbours) load `0x20000` into `r3` and call `func_80012BE0`, which ORs its argument into `0xE2000000` and writes `CC006008` (a DI command word). Those are `0xE2` audio-status subcommands, not file lengths. The other sites (`80017248`, `80043928`, `800439FC`, `8004DFC8`, `8007xxxx` and so on) feed `func_8000D814`, `func_8000D89C`, or are plain `lis r0, 2` bit-mask setups. None computes a length from a file size or chunk count.
-- Conclusion: the `0501.DAT` read (length `0x20000`, offset `0x03DC0000`) is still unattributed. Attribution needs the Dolphin breakpoint trace.
+- The 31 `lis rN, 2` sites in `lib.s` (UNVERIFIED): the DVD-area ones (`80014CC0`, `80014CE8` and their neighbours) load `0x20000` into `r3` and call `func_80012BE0`, which ORs its argument into `0xE2000000` and writes `CC006008` (a DI command word). Those are `0xE2` audio-status subcommands, not file lengths. The other sites (`80017248`, `80043928`, `800439FC`, `8004DFC8`, `8007xxxx` and so on) feed `func_8000D814`, `func_8000D89C`, or are plain `lis r0, 2` bit-mask setups. The one exception found later is `0x8008DB10`, which stores `0x20000` as a request length; see "The pack-open default" below. This bullet's earlier "none computes a length" reading is withdrawn.
+- Conclusion: the `0x20000` read has a static source — the pack loader's default request length (`func_8008DA74`). What still needs the runtime trace is which slot and pack it belongs to. See "The pack-open default".
 
 ### Loader search (UNVERIFIED)
 
 - The magic check exists but is obfuscated; see "gcaxDTPK magic check in the binary" above. The earlier conclusion that no code matches the magic is withdrawn.
 - `decomp/asm/_Main/text.s` (489,745 lines) has no named DVD symbols (`DVDOpen`, `DVDRead`, `DVDFastOpen`, `OSReport`); functions are labelled by address only, so calls appear as `bl func_8001xxxx`. It does call the SDK readers, e.g. one call at `0x00175D98` that reads the `BNR1` banner with a fixed length of `0x1960`.
-- `_Main.rel` also has no reference to `lbl_801B3CC0` and no `0x20000` read length. Its 45 `lis rN, 2` sites pass `0x20000` to the heap allocator `func_800E2D68(align, size)` (e.g. `li r3, 0x20` with `lis r4, 2` is a 128 KiB, 0x20-aligned allocation) and to unrelated API calls.
+- `_Main.rel` also has no reference to `lbl_801B3CC0`. Its 45 `lis rN, 2` sites are mostly heap-allocator calls `func_800E2D68(align, size)` (e.g. `li r3, 0x20` with `lis r4, 2` is a 128 KiB, 0x20-aligned allocation), but five of them, at `0x000B7FEC`, `0x000B80B0`, `0x000B83DC`, `0x000B8534` and `0x000B86A8`, load `0x20000` as the pack-open length argument. See "Stage-pack table" below. The earlier "no `0x20000` read length" reading was incomplete.
 - The only `0x4454` hits in `asm/lib.s` outside the magic check are unrelated stack offsets, not the `DTPK` magic.
 - Runtime route blocked: the Cloud VM has no Dolphin, no X display and no Xvfb (x86_64, 8 cores, 48 GB free). A read trace needs an emulator with a display, so it has to run on a machine that has one.
 - Headless attempt (Ubuntu 24.04, non-root): Xvfb was unpacked from apt into `.local/apt/root` with its libraries resolved, but it fails with `Failed to compile keymap` because it runs the absolute path `/usr/bin/xkbcomp`, which is absent (no root to install it). Ubuntu apt has no `dolphin-emu` package; `dolphin` there is the KDE file manager. A headless Dolphin needs a source build or an AppImage.
-- No loader string or symbol in `decomp/` or in `baserom.dol` names a stage file, track, checkpoint or spawn table. `sonicriders.map` has no such symbols either. The code that maps stage IDs to FST entries is still unidentified.
+- The stage-file strings and the stage/pack table were later found in `decomp/asm/_Main/data.s`; this conclusion is withdrawn. See "Stage-pack table" below.
 - Geometry, collision, checkpoint and spawn field offsets are not documented. Nothing in this doc should be used as a format spec yet.
 
 ### Next steps
 
-1. Run the Dolphin write breakpoint on `0xCC006018` and capture the caller of the `0x20000` write: return address, `r3`–`r6`, and the block the length came from.
-2. Map the `lbl_8021C2D8` slot table to DAT files, starting with whether `0501.DAT` is registered through `func_80088594`.
-3. Once the entry table at `+0x60` (`gcaxTBLD`) is parsed, confirm which section holds geometry, collision, checkpoints and spawns.
-4. Only then write the field tables here, with each claim marked UNVERIFIED until it is checked against the binary.
+1. The DTPK layer is now statically accounted for: the pack to open comes from `lbl_001E9BE4` via the stage value in `lbl_10017928`, the name is resolved to an FST entry by `func_8009DCC8`, and the read length is `0x20000` unless the caller passes otherwise. To catch a load live, break on `lbl_000B8468` (REL `0x000B8468`: record the stage global and `lbl_1001A6E4` slot byte before and after `lbl_8008E2FC`) and cross-check with the DI breakpoint on `0xCC006018` (`0xCC006014` `= 0x010D0320 + 0, DILENGTH `= 0x00020000`).
+2. The stage-ID writers are traced (see "Stage-ID writers" above): the normal course selector is `0x001235C8` writing through the 20-entry table `lbl_001CE598`, and stages 9–16 reuse the stage 1–8 packs. Still open there: identify which screen owns the ten-row table `lbl_001F222C`, and what the third byte of `lbl_001CE598` indexes (presumed mission id).
+3. Explain the `0x800` read at `0x03DE0000` (`0501.DAT+0x20000`): statically it is 0x800-aligned data, not the TOC (`0x8E0` bytes at the pack start). Trace who issues it (same slot or another) with the runtime trace.
+4. Once the entry table at `+0x60` (`gcaxTBLD`) is parsed, confirm which section holds geometry, collision, checkpoints and spawns. Only then write the field tables here, with each claim marked UNVERIFIED until it is checked against the binary.
 
 ## Status
 
-Phase 2.1 partially done. Container candidates identified, the DTPK validation path located, and the DVD layer identified as the SDK's DVDFS. The `0x20000` read length is still unattributed. Phase 2 items 2.1–2.7 remain open.
+Phase 2.1 largely resolved statically: the DTPK packs are opened by name through the DOL's DVDFS (`func_8009DCC8` → `func_8008DA74`), the stage/pack table (`lbl_001E9BE4`, chosen by the stage value in `lbl_10017928`) maps `0501.DAT`–`0509.DAT` with FST entries 4–12, and the logged `0x20000` head read comes from the REL pack openers with an explicit `0x20000`. The stage-ID writers are now traced: the course selector `0x001235C8` picks stage 1–16 through `lbl_001CE598`, stage 1 is the startup default (`0x001134DC`), and stages ≥17 use `0509.DAT`. Remaining unknowns are the `0x800` read at `0501.DAT+0x20000`, the identity of the ten-row preload menu, and the format of the pack contents. Phase 2 items 2.1–2.7 remain open.
 
 ## DI store trace (static, UNVERIFIED)
 
@@ -191,14 +191,99 @@ This replaces an earlier reading of the same block as a game request list, which
 - The disc header gives FST offset `0x144000`, FST size `0x72B1` and FST max size `0x72B1`, so the FST fields are not the source of `0x20000` either.
 - The `0x20000` DMA at `0x3DC0000` is 131,072 bytes, about 37% of the file. It is a partial chunk, not the file size, so the value is a per-request length passed by the caller.
 
-### Where the `0x20000` comes from (search result, 2026-11-04)
+### The pack-open default: `0x20000` (static, 2026-11-05)
 
-The value is not a constant, a table entry, or a header field in the DOL, the REL or the disc metadata. Checks, all against `decomp/baserom.dol`, `decomp/asm/` and `.local/disc/sonicriders.iso`:
+This is the static source of the logged `0x20000` DMA. It is a default request length in the pack loader, not a file size, a table entry or a DI command operand.
+
+- `func_8008DA74` (`lib.s` 151439, `0x8008DA74`) starts a DTPK pack open. Arguments: `r3` = slot index (`< 0x20`), `r4` = pack id (stored at `req+0x0C` at `0x8008DC34`; see "Stage-pack table" — the thunk `lbl_8008E2FC` puts the resolved DVD FST entry number here), `r5` = mode, `r6` = requested length.
+- Early-outs, all static, offsets from `lbl_8021C2D8`: `-1` slot `>= 0x20`; `-2` the word at `+0x304 + slot*4` is null; `-3` the byte at `+0x384 + slot` is non-zero (slot already busy); `-20` the word at `+0xE94 + slot*4` is not `0xFF`; `-12` the length is not `0x800`-aligned (`clrlwi. r0, r6, 0x15` at `0x8008DAEC` keeps the low 11 bits).
+- `0x8008DB04`–`0x8008DB18`: when the caller passes length `0`, it loads `lis r4, 2` and stores `0x00020000` at `lbl_801DDD68 + slot*0x40 + 4`. When the caller passes a length, that value is stored at the same field instead (`0x8008DB20`–`0x8008DB30`).
+- That `+0x04` field is the request length for the rest of the slot's life. It is the size argument of the allocator call at `0x8008DB90` (`func_8000ABB4(heap, size)`, which rounds up to 64 bytes), and it is passed as the length to the file object's `+0x18` method with the buffer slot at `req+0x1C` (`0x8008DDE4`, `0x8008E108`, `0x8008E11C`). Nothing in this layer or in the SDK reader rewrites it.
+- The slot's request is completed at `0x8008E2A8`, which calls `func_80088594(slot)` — the `gcaxDTPK` validator — and then marks the slot done: `+0xD14 = 2` and `+0xE94 = 0xFF`.Consequence: a pack opened without an explicit size is read as `0x20000` bytes and the buffer is validated as `gcaxDTPK`. That is the sequence the DVD log shows for `0501.DAT` (one `0x20000` DMA at the file start, no separate header read), so this default is the best static match for the logged length.
+
+Correction (2026-11-05, later the same day): every pack-open call site actually found in the REL passes the length explicitly as `0x00020000` (`lis r6, 2` in front of all five `lbl_8008E2FC` calls and the same constant at the equivalent call inside `lbl_000B8468`). So the value the shipped game uses comes from the REL callers, not from this default; the `r6 == 0` default path has no known caller. The alignment rule (`0x800`-multiple) and the header validation after the read still hold.
+
+UNVERIFIED: that `0501.DAT` occupied the slot opened on that frame, and whether the following `0x800` read at `0x03DE0000` is a second request in the same slot. `0x800` passes the alignment check above, so it is a legal explicit length; the bytes at `0501.DAT+0x20000` are high-entropy, so that read is data rather than a second readable header. Confirming both needs the runtime trace.
+
+### Stage-pack table (static, 2026-11-05)
+
+This closes the "which pack, which caller" question statically, with the disk FST as witness.
+
+**Disc FST entry numbers (verified against `sonicriders.iso` at `0x144000`, string table at FST+`0x4E48`, root entry's end index `0x686` = 1670 children):** entry 2 = `00.DAT`, entry 3 = `01.DAT`, entries 4–12 = `0501.DAT`–`0509.DAT`, entries 17–36 = the `10xxx.DAT` character packs. So `0501.DAT` is FST entry 4, at `0x3DC0000`, size `0x56800`.
+
+**The DOL side: name → entry → slot.** The thunk `lbl_8008E2FC` (`lib.s` 152024) is the real pack-open entry. Its second argument is the pack name string: if null it returns `-128`, otherwise it calls `func_8009DCC8(name, 0)` to resolve the name against the DVD filesystem; a zero result returns `-21`, otherwise the resolved FST entry number travels in `r4` into `func_8008DA74(slot, entry, buffer, length, r7, r8)`. So `func_8008DA74`'s second argument (stored at `req+0x0C`) is the FST entry number resolved from the name, not a handle found by scanning — the earlier wording in "The pack-open default" that called it a handle is corrected here.
+
+**The REL side: five call sites, all with explicit `0x20000`.**
+
+- Startup block (`lbl_000B7F2C`): opens `00.DAT` (name literal at `lbl_001E9670`) then `01.DAT` (`lbl_001E9678`), each with a fresh `func_800E2D68(0x20, 0x20000)` buffer, registers `(encounter id 0x9e0 / 0x2ee0, record)` at `lbl_10026620 + slot*4` and at `+0x80`, and waits on `lbl_8008D9F8(slot) == 2` (with `lbl_0014C32C` advancing frames).
+- Character-pack helpers: struct arrays of 0x1C-byte records at `lbl_001E9BE4` (9 records, `05xx.DAT` stage packs), at `lbl_001E9EBC` / `lbl_001E9CE0` (17 records each, `10xxx.DAT` name strings and `10Jxxx.DAT` variants), each record holding `{ name (12 bytes), 0, TOC size at +0x10, bulk size at +0x14, section-ID list at +0x18 }`. The +0x10/+0x14 fields of all nine `05xx` records match the `gcaxDTPK` headers on disc (+0x10 = 0x8E0 TOC size for `0501.DAT`, +0x14 = 0x55400 bulk size). Verified for all nine packs.
+- `lbl_000B8468` (the stage-pack opener, called from `0x0003C248` and `0x000AF678`): picks a record `lbl_001E9BE4 + (n-1)*0x1C` where `n` is the stage value in the global `lbl_10017928` (values 1–8 first eight records, 9–16 the same eight again, ≥17 record 8), allocates `0x20000` with `func_800E2D68(0x20, 0x20000)`, registers `(name, TOC size)` at `lbl_10026620 + slot*4` and `bulk size` at `+0x80` where slot is the byte at `lbl_1001A6E4` — the REL's next-free-slot counter, incremented after the open succeeds at `0x000B8590` — and calls `lbl_8008E2FC(slot, name, buffer, 0x20000, 0, 0)`.
+
+**The stage/pack table `lbl_001E9BE4` (7 words × 9 records, `_Main/data.s` 20323):**
+
+| idx | name | +0x10 (TOC size) | +0x14 (bulk size) | +0x18 (section-ID list) | FST entry | disc offset |
+|---|---|---|---|---|---|---|
+| 0 | `0501.DAT` | 0x8E0 | 0x55400 | `lbl_001CD514` | 4 | `0x3DC0000` |
+| 1 | `0502.DAT` | 0xCC0 | 0xAB2C0 | `lbl_001CD538` | 5 | `0x3E18000` |
+| 2 | `0503.DAT` | 0xDE0 | 0xA8840 | `lbl_001CD57C` | 6 | `0x3EC8000` |
+| 3 | `0504.DAT` | 0x9C0 | 0x40EC0 | `lbl_001CD5D8` | 7 | `0x3F78000` |
+| 4 | `0505.DAT` | 0xD40 | 0x9ECE0 | `lbl_001CD62C` | 8 | `0x3FC0000` |
+| 5 | `0506.DAT` | 0xA80 | 0x9DFE0 | `lbl_001CD670` | 9 | `0x4060000` |
+| 6 | `0507.DAT` | 0xEA0 | 0xAC180 | `lbl_001CD6B4` | 10 | `0x4100000` |
+| 7 | `0508.DAT` | 0x14A0 | 0xA1380 | `lbl_001CD6D0` | 11 | `0x41B0000` |
+| 8 | `0509.DAT` | 0x9A0 | 0x522C0 | `lbl_001CD708` | 12 | `0x4258000` |
+
+The +0x18 pointers sit in `_Main/rodata.s` (`lbl_001CD514` onward) and hold lists of 0xA9xxxxxx IDs — e.g. `lbl_001CD514` for `0501.DAT` is four 0xA90F0100 then four 0xA90F0300, ending with 0 — the same 0xA90xxxxx ID family as the character-pack section-ID tables near `lbl_001E9610`. Presumed pack section IDs. UNVERIFIED semantics.
+
+So, statically: `0501.DAT`'s `0x20000` head read comes from `lbl_000B8468` (or one of the four structurally identical sibling call sites), the name is resolved to FST entry 4 by the DOL's own DVD filesystem lookup, and the DTPK slot used is whatever byte `lbl_1001A6E4` held at that call — not a fixed slot. The stage-ID global's writers are traced in "Stage-ID writers" below. UNVERIFIED: whether the `0x800` read at `0x03DE0000` is the pack's TOC transfer (`0x50x` TOC ranges 0x8E0–0x14A0 bytes; the aligned 0x800 read cannot cover the whole 0x8E0 table).
+
+### Stage-ID writers: what sets `lbl_10017928` (static, 2026-11-06)
+
+Seven stores, five distinct paths, and they belong to different menus rather than one stage-select. All addresses are REL `_Main` offsets.
+
+1. **Startup default — `0x001134DC`.** In the entry block `lbl_001134B0` of the state machine dispatched through `lbl_001F22C0` (states 0–0x26), it sets `lbl_10017928 = 1` next to `lbl_10017920 = 1`, `lbl_10017924 = 0`, then re-initialises the eight 0x1080-byte slot records. Every session therefore starts asking for stage 1 (`0501.DAT`) until a menu overwrites it.
+2. **Ten-row preload menu — `0x00115888`, `0x0011589C`, `0x001158B0`** (handlers `lbl_00115880`, `lbl_00115894`, `lbl_001158A8`). The dispatcher at `lbl_001154D0` increments byte `lbl_001F2228` on entry (wrapping after 9) and jumps through the 10-entry table `lbl_001F222C` (`_Main/data.s` 29320). The ten handlers write these stage values: idx 0 → 1, 1 → 2, 2 → 3, 3 → 4, 4 → 5, 5 → 3, 6 → 4, 7 → 7, 8 → 0x11, 9 → 0x12. Each also fills the eight per-slot arrays (`lbl_00115FD4` with 0,1,2,3,4,5,6,0xF in various orders), sets `lbl_8021B8C0`/`C4`/`C8`, sets the timer `lbl_10017920` (0x2BC or 0x1F4) and calls `lbl_00037A38` to load the scene. Rows 5 and 6 repeat stages 3 and 4 with different slot lists, so the ten rows are not ten distinct tracks. UNVERIFIED which screen this is.
+3. **The course selector — `0x001235C8`** (handler `lbl_001234E4`). On a pad-A press it builds a grid index from the cursor fields (row at `r30+0x16`, column at `+0x19`, page at `+0x1B`: pages 0 and 1 index two row tables loaded into `r28`, pages 2 and 3 use `row*5 + 0x50`), calls `lbl_000EE660(index)`, and writes the result pair out: `lbl_10017928 = entry[1]`, `lbl_10087DF4 = entry[2]`. `lbl_000EE660` searches the 20-entry, 3-byte table `lbl_001CE598` (`_Main/rodata.s` 14843) for `entry[0] == index`.
+
+   The table, as `(id, stage, mission?)`:
+
+   | id | stage | 3rd |
+   |---|---|---|
+   | 0 | 1 | 5 |
+   | 1 | 2 | 5 |
+   | 2 | 3 | 5 |
+   | 3 | 4 | 5 |
+   | 5 | 5 | 5 |
+   | 9 | 5 | 6 |
+   | 6 | 6 | 5 |
+   | 7 | 7 | 5 |
+   | 8 | 8 | 5 |
+   | 4 | 8 | 6 |
+   | 0xA | 9 | 5 |
+   | 0xE | 9 | 6 |
+   | 0xB | 0xA | 5 |
+   | 0xC | 0xB | 5 |
+   | 0xD | 0xC | 5 |
+   | 0xF | 0xD | 5 |
+   | 0x10 | 0xE | 5 |
+   | 0x13 | 0xE | 6 |
+   | 0x11 | 0xF | 5 |
+   | 0x12 | 0x10 | 5 |
+
+   Stages run 1–16, and tracks 5, 8, 9 and 14 carry a second entry with a different third byte (6 instead of 5) — consistent with two missions per track. This is what makes the reader's `9–16 → same eight packs` fold make sense: stages 9–16 are alternate missions on the same eight tracks, so the same DTPK is reused. UNVERIFIED that the third byte is a mission id, and that page 2/3 row arithmetic (`row*5 + 0x50`) addresses further entries.
+4. **Three-entry special selector — `0x00139AD4`** (handler `lbl_00139970`, one of the 12 handlers in `lbl_001F3858` dispatched by `lbl_00138DC4`). On a pad-A press it stores `lbl_10017928 = r29+0x0D + 0x11`, where `r29+0x0D` is a 3-value cyclic cursor (0–2, wrapped at 3 with the `0xA9000100`/`0xA9000200` sound calls). That is stages **17, 18, 19**, all of which the reader resolves to record 8, i.e. `0509.DAT`.
+5. **Four-per-page selector — `0x0014B4F0`** (`lbl_0014B44C`, spawned by `lbl_0003D4C0` when `lbl_10017920 == 0x320`). In state 2 it reads byte `lbl_1008CF74` as the page, steps the 4-value cursor `lbl_001F3DF0` (0–3, wraparound via `subfic`/`cntlzw`), and stores `lbl_10017928 = lbl_001D3B50[page*5 + step + 1]`: page 0 → stages 2, 3, 4, 5 and page 1 → 10, 11, 12, 13 (`lbl_001D3B50` holds `01 02 03 04 05` then `09 0A 0B 0C 0D`). It also sets `lbl_8021B8C0 = 8` and `lbl_10017920 = 0x320`.
+
+**Consequence for the pack mapping.** Every stage value the five paths produce — 1–7 from the preload menu, 1–5 and 0x11–0x12 from the same table's other rows, 1–0x10 from the course table, 2–5 and 10–13 from the four-per-page selector, 0x11–0x13 from the special selector — lands inside the nine-record table: 1–8 → `0501.DAT`–`0508.DAT`, 9–16 → the same eight, and ≥17 → `0509.DAT`. So `0509.DAT` is not a ninth course in the normal rotation; it is the pack the ≥17 stages load, presumably a special-mode arena. UNVERIFIED.
+
+### Where the `0x20000` comes from: search result and its limits (2026-11-04)
+
+This was a search for the value as a literal. It found none because the constant is encoded as `lis rN, 2` (or `lis r4, 2` into a request field), which a text search for `0x20000` cannot see — see "The pack-open default" and "Stage-pack table" below. Checks made, all against `decomp/baserom.dol`, `decomp/asm/` and `.local/disc/sonicriders.iso`:
 
 1. No `0x20000`, `131072` or `1 << 17` literal in any `.c`, `.h`, `.s` file under `decomp/`, and no `slwi ..., 15` / `slwi ..., 17` in `lib.s`. The length is not built by a shift.
-2. All 31 `lis rN, 2` sites load `0x00020000` as a DI command operand, not a length (see the jump table `lbl_80014C60`–`lbl_80014CEC`, `lib.s` 13367–13400, where `li r3, 0`, `lis r3, 1`, `lis r3, 2` and `lis r3, 3` feed `func_80012BE0`).
+2. The `lis rN, 2` sites that were checked load `0x00020000` as a DI command operand, not a length (see the jump table `lbl_80014C60`–`lbl_80014CEC`, `lib.s` 13367–13400, where `li r3, 0`, `lis r3, 1`, `lis r3, 2` and `lis r3, 3` feed `func_80012BE0`). This check was not exhaustive: it missed `0x8008DB10`, which stores `0x20000` as a request length. See "The pack-open default" above.
 3. The only `0x00020000` words in the DOL data sections are unrelated: `0x800E4EE8` is a 4-word bitmask table `and`ed against flag bits (`0x8006F690`–`0x8006F6B8`); `0x800F3CEC` / `0x800F3EDC` are pixel pattern data; `0x80120C70` is part of the power-of-two table `0x2000 0x4000 0x8000 0x10000 0x20000 0x40000`; `0x80120E14`, `0x80120E54`, `0x80120E94` are offset tables.
 4. `0501.DAT`'s header and TOC (first `0x8E0` bytes) contain no word-aligned `0x00020000` or `0x00000800` field, so the two logged reads are not size fields from the pack TOC.
-5. `_Main.rel` has no `0x20000` length and no reference to `lbl_801B3CC0`.
+5. `_Main.rel` has no reference to `lbl_801B3CC0`. The claim that it has no `0x20000` length was later withdrawn: five `lis r6, 2` sites before `bl lbl_8008E2FC` pass `0x20000` as the pack-open length. See "Stage-pack table".
 
-The SDK readers do not split requests, so the chunking decision is made by game code before the call. That code is not among the decomp's direct call sites: the shipped build probably reaches `DVDReadAsync` through a function pointer or through code built differently from this decomp. Confirming it needs the Dolphin trace.
+The SDK readers do not split requests, so the length is decided by the caller before the call. The caller is the pack loader: the REL openers pass `0x20000` explicitly at all known call sites, and the file-object method that receives it is called through the function pointer at `+0x18`, which is why a scan for direct `DVDReadAsync` call sites did not find it. See "Stage-pack table" below.
