@@ -67,6 +67,6 @@ Verification: `sha1sum -c sonicriders.sha1` (upstream file, lists `sonicriders.d
 
 Versions recorded: devkitPPC r51 (binutils 2.47.20260726, gcc 16.2.0, devkitPPC); host gcc 13.3.0; host Python 3.12.3; wibo prebuilt static `wibo-i686` from the decompals/wibo release; mwcceppc 2.4.7 build 105.
 
-Mismatch to resolve: the checklist and AGENTS.md say the output is `decomp/build/sonicriders.dol`, but the upstream Makefile writes to `decomp/`. Phase 1 acceptance is not yet marked `[x]`, pending the user's decision on the path, the compiler version (2.4.7 used vs. 2.6 default), and the manual copy step.
+Mismatch to resolve: the checklist and AGENTS.md say the output is `decomp/build/sonicriders.dol`, but the upstream Makefile writes to `decomp/`. Resolved by D-4 (compiler version) and D-5 (copy the verified DOL to `decomp/build/`); Phase 1 is marked `[x]` in the checklist on that basis.
 
-`baserom.dol` verified: a user-supplied US disc (`GXEE8P`, 1,461,714,944 bytes) yields a `boot.dol` with sha1 `e90a13504974b917a675d59f07014e0e817c5e5d`, matching the decomp. The file was placed at `decomp/baserom.dol` (git-ignored) and is not in the repository. Not yet built: tasks 1.2–1.5 still need the MWCC compiler and devkitPro.
+`baserom.dol` verified: a user-supplied US disc (`GXEE8P`, 1,461,714,944 bytes) yields a `boot.dol` with sha1 `e90a13504974b917a675d59f07014e0e817c5e5d`, matching the decomp. The file was placed at `decomp/baserom.dol` (git-ignored) and is not in the repository. The build itself (tasks 1.2–1.5) was done later with the supplied compiler and devkitPPC; see above.

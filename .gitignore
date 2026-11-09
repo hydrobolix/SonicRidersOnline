@@ -2,6 +2,12 @@
 baserom.dol
 *.iso
 *.gcm
+*.ciso
+*.rvz
+*.wbfs
+*.gcz
+*.nkit.*
+assets/raw/
 *.arc
 *.szs
 *.dol
