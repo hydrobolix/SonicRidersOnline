@@ -62,13 +62,13 @@ Commands are defined as each phase lands. Current status:
 
 | Check | Command | Status |
 |---|---|---|
-| Decomp matching build | `make -C decomp` then `sha1sum decomp/build/sonicriders.dol` (must equal `e90a13504974b917a675d59f07014e0e817c5e5d`) | Planned (Phase 1) |
-| Extractor tests | `tools/extract/` test command, TBD in Phase 2 | Planned |
+| Decomp matching build | `make -C decomp` then `sha1sum decomp/build/sonicriders.dol` (must equal `e90a13504974b917a675d59f07014e0e817c5e5d`) | Phase 1 resolved by D-4/D-5 in docs/decomp-baseline.md (re-run to confirm) |
+| Extractor tests | `python3 -I tools/extract/test_srlz.py` (offline); whole-disc check `tools/extract/srlz_check.c` needs the user's disc | Passing (3 tests) |
 | Map validator | `tools/mapkit validate maps/<name>` , TBD in Phase 3 | Planned |
 | Server tests | `server/` test command, TBD in Phase 6 | Planned |
 | Port build | `port/` build command, TBD in Phase 4 | Planned |
 
-No command in this table has been run yet.
+The extractor tests were run on 2026-11-08. Phase 2 state and open work: [docs/handoff-phase2.md](docs/handoff-phase2.md).
 
 ## Planning documents
 

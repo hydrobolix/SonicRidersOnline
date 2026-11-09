@@ -48,12 +48,17 @@ def decode(buf: bytes):
     return bytes(out[:size]), flag, size
 
 
-def encode(data: bytes, flag: int = 0x80000001) -> bytes:
+def encode(data: bytes, flag: int = 0x80000001, overrun: bool = False) -> bytes:
     """Re-encoder. For N=1 it reproduces the disc's compressor byte for byte
     on every file checked (see docs/asset-extraction.md): greedy, longest match
     within the 255-byte window, minimum match length 2, ties broken toward the
     FARTHEST offset. N=2 uses the same rules with a 65535 window (unverified:
-    no N=2 file exists on the US disc)."""
+    no N=2 file exists on the US disc).
+
+    overrun=True lets a match read one virtual zero byte past the end of the data.
+    8 of the 1,562 disc files (P240, P240M, PO40, PO40M, PO70, PZ40, PZ40M, PZ70)
+    were compressed that way: their last match runs one byte past the declared
+    size. All other files re-encode with overrun=False."""
     n = flag & 0xFF
     maxv = (1 << (8 * n)) - 1
     bits = []
@@ -63,11 +68,14 @@ def encode(data: bytes, flag: int = 0x80000001) -> bytes:
             bits.extend((b >> i) & 1 for i in range(7, -1, -1))
 
     i = 0
+    data = bytes(data)
+    lim = len(data) + (1 if overrun else 0)
+    pad = data + b"\0"
     while i < len(data):
         best_len = best_off = 0
         for off in range(1, min(i, maxv) + 1):
             l = 0
-            while i + l < len(data) and l < maxv and data[i + l - off] == data[i + l]:
+            while i + l < lim and l < maxv and pad[i + l - off] == pad[i + l]:
                 l += 1
             if l >= best_len and l > 0:
                 best_len, best_off = l, off

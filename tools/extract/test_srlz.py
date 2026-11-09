@@ -18,6 +18,11 @@ class Roundtrip(unittest.TestCase):
             self.assertEqual(size, len(blob))
             self.assertEqual(srlz.encode(dec), enc)  # stable
 
+    def test_overrun_flag(self):
+        blob = bytes(64) + b"abcabcabcabc" + bytes(7)
+        for ov in (False, True):
+            self.assertEqual(srlz.decode(srlz.encode(blob, overrun=ov))[0], blob)
+
     def test_header(self):
         enc = srlz.encode(b"hello hello hello")
         self.assertEqual(enc[:4], b"\x80\x00\x00\x01")
